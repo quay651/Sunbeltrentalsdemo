@@ -1,0 +1,23 @@
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.db
+venv/
+.venv/
+
+# Node
+node_modules/
+build/
+dist/
+
+# Uploads
+backend/uploads/
+uploads/
+
+# OS
+.DS_Store

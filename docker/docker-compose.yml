@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sunbelt_user
+      POSTGRES_PASSWORD: sunbelt_pass
+      POSTGRES_DB: sunbelt_diag
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - ../backend/.env
+    environment:
+      DATABASE_URL: postgresql://sunbelt_user:sunbelt_pass@db:5432/sunbelt_diag
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  uploads:

@@ -1,0 +1,99 @@
+/* ============================================================
+   Sunbelt Electrical Diagnostics — Design tokens
+   Palette: clean white base, forest/signal green as the primary
+   action color, warm yellow reserved for the safety banner and
+   small highlights (caution-tape feel, not a dominant color).
+   Type: monospace for data/readouts, clean sans for prose.
+   ============================================================ */
+
+:root {
+  --bg-base: #ffffff;
+  --bg-subtle: #f4f7f5;
+  --bg-panel: #ffffff;
+
+  --border-subtle: #dbe5df;
+  --border-strong: #bcccc3;
+
+  --text-primary: #15201a;
+  --text-secondary: #5b6b62;
+  --text-tertiary: #8a9a90;
+
+  --accent-green: #1f8a4c;
+  --accent-green-dark: #15693a;
+  --accent-green-tint: #e6f4ec;
+
+  --accent-yellow-tint: #fdf3d6;
+  --accent-yellow-border: #e8c84a;
+
+  --signal-red: #c0392b;
+
+  --font-mono: "JetBrains Mono", "SF Mono", "Roboto Mono", Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  height: 100%;
+}
+
+#root {
+  height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 16px; /* prevents iOS zoom-on-focus */
+}
+
+::selection {
+  background: var(--accent-green-tint);
+}
+
+/* Focus visibility for keyboard nav */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
