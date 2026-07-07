@@ -6,6 +6,17 @@ Flask + Socket.IO backend providing:
 - Real-time chat via Socket.IO so multiple technicians see updates live
 - AI diagnosis + vision analysis via ai_engine.py
 """
+# Must run before any other import that touches sockets/ssl (flask, anthropic's
+# httpx client, etc.) -- without this, eventlet's async_mode is installed but
+# inert and every request blocks the whole process for the duration of any
+# in-flight AI call.
+import eventlet
+# eventlet's default kqueue hub is broken on this Python/macOS combination
+# (TypeError from eventlet/hubs/kqueue.py on socket accept) -- "selects" is a
+# slower but portable fallback that works everywhere.
+eventlet.hubs.use_hub("selects")
+eventlet.monkey_patch()
+
 import os
 import base64
 import json
@@ -18,16 +29,23 @@ from flask_socketio import SocketIO, emit, join_room
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
+# Must run before importing ai_engine, which reads ANTHROPIC_API_KEY (and the
+# model env vars) from os.environ at import time -- loading too late means
+# ai_engine silently falls back to no key / default models.
+load_dotenv()
+
 from models import db, Technician, Conversation, Message, Photo, DiagnosticLog
 import ai_engine
 
-load_dotenv()
-
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///sunbelt_diag.db"
-)
+
+# Managed Postgres providers (Render, Heroku, etc.) hand out "postgres://" URLs,
+# but SQLAlchemy 1.4+ only recognizes the "postgresql://" scheme.
+_database_url = os.environ.get("DATABASE_URL", "sqlite:///sunbelt_diag.db")
+if _database_url.startswith("postgres://"):
+    _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = _database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/app/uploads")
@@ -36,10 +54,47 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
-CORS(app, resources={r"/api/*": {"origins": FRONTEND_ORIGIN}})
-socketio = SocketIO(app, cors_allowed_origins=FRONTEND_ORIGIN)
+FRONTEND_ORIGINS = [o.strip() for o in FRONTEND_ORIGIN.split(",") if o.strip()]
+CORS(app, resources={r"/api/*": {"origins": FRONTEND_ORIGINS}})
+socketio = SocketIO(app, cors_allowed_origins=FRONTEND_ORIGINS)
 
 db.init_app(app)
+
+# ---------------------------------------------------------------------------
+# Demo passcode gate
+# ---------------------------------------------------------------------------
+# Lightweight shared-passcode check for demoing this to a small group over a
+# public tunnel. This is NOT real auth (no per-user identity, one shared
+# secret) -- it exists only to keep a leaked/forwarded link from letting
+# strangers rack up charges on the live ANTHROPIC_API_KEY behind this app.
+DEMO_PASSCODE = os.environ.get("DEMO_PASSCODE")
+PASSCODE_EXEMPT_PATHS = {"/api/health", "/api/demo-auth"}
+
+
+@app.before_request
+def require_demo_passcode():
+    if not DEMO_PASSCODE:
+        return  # gate disabled if no passcode is configured
+    if request.method == "OPTIONS":
+        return  # let CORS preflight through
+    if not request.path.startswith("/api/") or request.path in PASSCODE_EXEMPT_PATHS:
+        return
+    # Header covers normal API calls; query param covers plain <img src> requests
+    # (e.g. the photo file route) which can't set custom headers.
+    supplied = request.headers.get("X-Demo-Passcode") or request.args.get("passcode")
+    if supplied != DEMO_PASSCODE:
+        return jsonify({"error": "demo passcode required"}), 401
+
+
+@app.route("/api/demo-auth", methods=["POST"])
+def demo_auth():
+    if not DEMO_PASSCODE:
+        return jsonify({"ok": True})
+    data = request.get_json() or {}
+    if data.get("passcode") == DEMO_PASSCODE:
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "incorrect passcode"}), 401
+
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "heic"}
 
@@ -447,7 +502,9 @@ def handle_join(data):
 
 
 @socketio.on("connect")
-def handle_connect():
+def handle_connect(auth):
+    if DEMO_PASSCODE and (not auth or auth.get("passcode") != DEMO_PASSCODE):
+        return False  # reject the connection
     emit("connected", {"status": "connected"})
 
 

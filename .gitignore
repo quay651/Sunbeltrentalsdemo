@@ -1,6 +1,7 @@
 # Environment / secrets
 .env
 *.env
+.env.local
 !.env.example
 
 # Python
@@ -21,3 +22,6 @@ uploads/
 
 # OS
 .DS_Store
+
+# Local-machine tooling (e.g. cloudflared binary for tunnel testing)
+.bin/

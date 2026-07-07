@@ -3,7 +3,8 @@ import TechLogin from "./components/TechLogin";
 import SessionListScreen from "./components/SessionListScreen";
 import ChatScreen from "./components/ChatScreen";
 import SearchScreen from "./components/SearchScreen";
-import { listConversations, createConversation } from "./api";
+import PasscodeGate from "./components/PasscodeGate";
+import { listConversations, createConversation, getStoredPasscode, verifyPasscode, connectSocket } from "./api";
 
 // Mobile-first single-screen navigation: list -> chat, or list -> search.
 // activeId === null && !showSearch -> session list ("home")
@@ -14,6 +15,21 @@ export default function App() {
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [gateChecked, setGateChecked] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+
+  // Checks any previously-stored passcode against the backend on load.
+  // If the backend has no DEMO_PASSCODE configured, this always passes --
+  // the gate only matters when the app is being demoed over a public tunnel.
+  useEffect(() => {
+    verifyPasscode(getStoredPasscode()).then((ok) => {
+      if (ok) {
+        connectSocket();
+        setUnlocked(true);
+      }
+      setGateChecked(true);
+    });
+  }, []);
 
   const refreshConversations = useCallback(async () => {
     try {
@@ -33,6 +49,21 @@ export default function App() {
     setConversations((prev) => [convo, ...prev]);
     setActiveId(convo.id);
   };
+
+  if (!gateChecked) {
+    return null;
+  }
+
+  if (!unlocked) {
+    return (
+      <PasscodeGate
+        onUnlock={() => {
+          connectSocket();
+          setUnlocked(true);
+        }}
+      />
+    );
+  }
 
   if (!technician) {
     return <TechLogin onLogin={setTechnician} />;
