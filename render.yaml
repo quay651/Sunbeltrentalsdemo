@@ -1,5 +1,5 @@
 databases:
-  - name: sunbelt-diag-db
+  - name: quay651-sunbelt-diag-db
     plan: free
     databaseName: sunbelt_diag
     user: sunbelt_user
@@ -10,7 +10,7 @@ services:
   # uploaded photo files (not the cached AI analysis text, which lives in
   # Postgres) don't survive a restart/redeploy/sleep-wake cycle.
   - type: web
-    name: sunbelt-diag-backend
+    name: quay651-sunbelt-diag-backend
     env: docker
     plan: free
     rootDir: backend
@@ -20,7 +20,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: sunbelt-diag-db
+          name: quay651-sunbelt-diag-db
           property: connectionString
       - key: ANTHROPIC_API_KEY
         sync: false
@@ -41,14 +41,14 @@ services:
       # Update if Render assigns a different hostname than expected (service
       # names must be globally unique on Render).
       - key: FRONTEND_ORIGIN
-        value: https://sunbelt-diag-frontend.onrender.com
+        value: https://quay651-sunbelt-diag-frontend.onrender.com
       - key: DEMO_PASSCODE
         sync: false
 
   # React static build. Genuinely always-on (CDN-served, no sleep) on the
   # free tier -- only the backend above has the cold-start behavior.
   - type: web
-    name: sunbelt-diag-frontend
+    name: quay651-sunbelt-diag-frontend
     env: static
     plan: free
     rootDir: frontend
@@ -57,4 +57,4 @@ services:
     envVars:
       # Update if Render assigns a different hostname than expected.
       - key: REACT_APP_API_URL
-        value: https://sunbelt-diag-backend.onrender.com
+        value: https://quay651-sunbelt-diag-backend.onrender.com
