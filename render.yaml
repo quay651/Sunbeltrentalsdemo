@@ -9,6 +9,9 @@ services:
   # 30-60s to wake on the next request; the free-tier disk is ephemeral, so
   # uploaded photo files (not the cached AI analysis text, which lives in
   # Postgres) don't survive a restart/redeploy/sleep-wake cycle.
+  #
+  # The frontend is NOT deployed here -- it's built and published to GitHub
+  # Pages via .github/workflows/deploy-frontend.yml instead.
   - type: web
     name: quay651-sunbelt-diag-backend
     env: docker
@@ -38,23 +41,7 @@ services:
         value: "15"
       - key: UPLOAD_FOLDER
         value: /app/uploads
-      # Update if Render assigns a different hostname than expected (service
-      # names must be globally unique on Render).
       - key: FRONTEND_ORIGIN
-        value: https://quay651-sunbelt-diag-frontend.onrender.com
+        value: https://quay651.github.io
       - key: DEMO_PASSCODE
         sync: false
-
-  # React static build. Genuinely always-on (CDN-served, no sleep) on the
-  # free tier -- only the backend above has the cold-start behavior.
-  - type: web
-    name: quay651-sunbelt-diag-frontend
-    env: static
-    plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./build
-    envVars:
-      # Update if Render assigns a different hostname than expected.
-      - key: REACT_APP_API_URL
-        value: https://quay651-sunbelt-diag-backend.onrender.com

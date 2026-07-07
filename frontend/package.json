@@ -2,6 +2,7 @@
   "name": "sunbelt-electrical-diag-frontend",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://quay651.github.io/Sunbeltrentalsdemo",
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
