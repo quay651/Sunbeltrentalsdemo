@@ -193,7 +193,7 @@ function MessageBubble({ msg }) {
           )}
         </div>
         {msg.photo && (
-          <img src={photoFileUrl(msg.photo.id)} alt="Uploaded diagnostic photo" style={s.messageImg} />
+          <img src={photoFileUrl(msg.photo.id)} alt="Diagnostic attachment" style={s.messageImg} />
         )}
         <p style={{ ...s.bubbleText, color: isAi ? "var(--text-primary)" : "#ffffff" }}>{msg.content}</p>
       </div>
