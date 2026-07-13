@@ -28,9 +28,9 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CLAUDE_MODEL
-        value: claude-opus-4-1-20250805
+        value: claude-opus-4-8
       - key: CLAUDE_VISION_MODEL
-        value: claude-opus-4-1-20250805
+        value: claude-opus-4-8
       - key: FLASK_SECRET_KEY
         generateValue: true
       - key: FLASK_ENV
