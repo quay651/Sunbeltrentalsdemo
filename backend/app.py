@@ -10,11 +10,14 @@ Flask + Socket.IO backend providing:
 # httpx client, etc.) -- without this, eventlet's async_mode is installed but
 # inert and every request blocks the whole process for the duration of any
 # in-flight AI call.
+import sys
 import eventlet
-# eventlet's default kqueue hub is broken on this Python/macOS combination
-# (TypeError from eventlet/hubs/kqueue.py on socket accept) -- "selects" is a
-# slower but portable fallback that works everywhere.
-eventlet.hubs.use_hub("selects")
+if sys.platform == "darwin":
+    # eventlet's default kqueue hub is broken on macOS with this Python version
+    # (TypeError from eventlet/hubs/kqueue.py on socket accept) -- "selects" is
+    # a slower but portable fallback. Linux (production/Render) keeps eventlet's
+    # default epoll hub, which handles concurrent connections far better.
+    eventlet.hubs.use_hub("selects")
 eventlet.monkey_patch()
 
 import os
